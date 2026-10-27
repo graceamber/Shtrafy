@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Штрафы за «жепу»</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFF0F3;--ink:#3B1630;--muted:#7A4A66;--rose:#D93A6E;--soft:#FFD9E2;--card:#FFFFFF;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1D1020;--ink:#FFE9EF;--muted:#D6A9BF;--rose:#FF7AA2;--soft:#3A2040;--card:#2D1A33;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1D1020;--ink:#FFE9EF;--muted:#D6A9BF;--rose:#FF7AA2;--soft:#3A2040;--card:#2D1A33;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Comfortaa","Nunito","Segoe UI",system-ui,sans-serif;line-height:1.55;font-size:16px}
+main{max-width:560px;margin:0 auto;padding:24px 18px 48px}
+h1{font-family:"Pacifico","Brush Script MT",cursive;font-weight:400;color:var(--rose);font-size:34px;line-height:1.2;margin:0 0 4px;text-align:center}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+#msg{min-height:3em;text-align:center;font-weight:600;margin:0 0 14px}
+.card{background:var(--card);border-radius:22px;padding:18px;margin-bottom:16px;text-align:center;box-shadow:0 5px 18px rgba(59,22,48,.14)}
+.card h2{font-family:"Pacifico","Brush Script MT",cursive;font-weight:400;font-size:24px;margin:0;color:var(--ink)}
+.num{font-size:64px;font-weight:600;color:var(--rose);line-height:1.1;margin:4px 0}
+.cap{color:var(--muted);font-size:14px;margin:0 0 12px}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:13px 18px;min-height:48px;cursor:pointer;color:#fff;background:var(--rose)}
+button.alt{background:transparent;color:var(--rose);border:2px solid var(--rose)}
+button:disabled{opacity:.4;cursor:default}
+button:active:not(:disabled){transform:scale(.96)}
+button:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+h3{font-size:17px;margin:26px 0 8px}
+ol{list-style:none;margin:0;padding:0}
+li{padding:9px 14px;background:var(--soft);border-radius:12px;margin-bottom:8px;font-size:15px}
+.undo{margin-top:6px}
+details{margin-top:26px;color:var(--muted);font-size:14px}
+summary{cursor:pointer;font-weight:600}
+textarea{width:100%;height:90px;margin:10px 0 8px;padding:10px;border-radius:12px;border:2px solid var(--soft);background:var(--card);color:var(--ink);font:13px/1.4 ui-monospace,monospace}
+</style>
+</head>
+<body>
+<main>
+<h1>Штрафы за «жепу»</h1>
+<p class="sub">Начисляем и отрабатываем</p>
+<p id="msg" aria-live="polite">Пока всё чисто. Следим друг за другом 👀</p>
+<section class="card" id="c0"></section>
+<section class="card" id="c1"></section>
+<div class="row"><button class="alt undo" id="undo" type="button">Отменить последнее действие</button></div>
+<h3>Последние события</h3>
+<ol id="log"></ol>
+<details>
+<summary>Перенести счёт на другой телефон</summary>
+<p>Скопируй этот код и отправь в чат. На другом телефоне вставь его сюда и нажми «Загрузить». Текущий счёт будет заменён.</p>
+<textarea id="code" aria-label="Код счёта"></textarea>
+<div class="row"><button type="button" id="load">Загрузить</button></div>
+</details>
+</main>
+<script>
+(function(){
+var P=["Олежа","Настюша"],KEY="shtrafy-log-v1",log=[];
+var add=["Принято. Отрабатывай, жепа!","Записано. Настюша не забывает.","Штрафы растут, а совесть где?","Ещё один. Серьёзно?","Это уже система."];
+var done=["Отработано! Мы гордимся.","Штраф закрыт. Можно выдохнуть.","Обнимашки засчитаны.","Долг уменьшился. Молодец.","Прощено. Но мы всё помним."];
+try{var s=localStorage.getItem(KEY);if(s){var a=JSON.parse(s);if(Array.isArray(a))log=a}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(log))}catch(e){}}
+function stat(p){var a=0,d=0;log.forEach(function(x){if(x.p===p){if(x.k==="a")a++;else d++}});return{a:a,d:d,o:a-d}}
+function msg(t){document.getElementById("msg").textContent=t}
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function act(p,k){
+ if(k==="d"&&stat(p).o<1)return;
+ log.push({p:p,k:k,ts:Date.now()});save();
+ var m=k==="a"?add:done;msg(m[log.length%m.length]);render();
+}
+function render(){
+ [0,1].forEach(function(p){
+  var c=document.getElementById("c"+p),s=stat(p);c.textContent="";
+  c.appendChild(el("h2","",P[p]));
+  c.appendChild(el("div","num",String(s.o)));
+  c.appendChild(el("p","cap","штрафов к отработке · начислено "+s.a+", отработано "+s.d));
+  var r=el("div","row"),b1=el("button","","+1 штраф"),b2=el("button","alt","Отработал(а)");
+  b1.type=b2.type="button";b2.disabled=s.o<1;
+  b1.onclick=function(){act(p,"a")};b2.onclick=function(){act(p,"d")};
+  r.appendChild(b1);r.appendChild(b2);c.appendChild(r);
+ });
+ var ol=document.getElementById("log");ol.textContent="";
+ if(!log.length)ol.appendChild(el("li","","Пока ничего нет"));
+ log.slice(-8).reverse().forEach(function(x){
+  var d=new Date(x.ts).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  ol.appendChild(el("li","",P[x.p]+": "+(x.k==="a"?"+1 штраф":"отработал(а) штраф")+" · "+d));
+ });
+ document.getElementById("undo").disabled=!log.length;
+ document.getElementById("code").value=JSON.stringify(log);
+}
+document.getElementById("undo").onclick=function(){log.pop();save();msg("Последнее действие отменено.");render()};
+document.getElementById("load").onclick=function(){
+ try{var a=JSON.parse(document.getElementById("code").value);
+  if(!Array.isArray(a)||!a.every(function(x){return (x.p===0||x.p===1)&&(x.k==="a"||x.k==="d")&&typeof x.ts==="number"}))throw 0;
+  log=a;save();msg("Счёт загружен.");render();
+ }catch(e){msg("Не получилось прочитать код. Проверь, что скопирован весь текст.")}
+};
+render();
+})();
+</script>
+</body>
+</html>
