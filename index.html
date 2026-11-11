@@ -56,6 +56,7 @@ summary{cursor:pointer;font-weight:600}
 </section>
 
 <div id="app" hidden>
+<section id="who" class="card" hidden><p>Кто ты? Это нужно, чтобы второму приходили уведомления.</p><div class="row"><button type="button" id="w0">Я — Олежа</button><button type="button" id="w1" class="alt">Я — Настюша</button></div></section>
 <p id="msg" aria-live="polite">Пока всё чисто. Следим друг за другом 👀</p>
 <p id="st"></p>
 <section class="card" id="c0"></section>
@@ -71,7 +72,8 @@ summary{cursor:pointer;font-weight:600}
 <p>Ссылка для браузера:</p>
 <input id="link2" readonly aria-label="Ссылка для браузера">
 <p>Код пары (если ссылка не открылась): <b id="code"></b></p>
-<div class="row"><button class="alt" type="button" id="leave">Выйти из пары</button></div>
+<p>Ты: <b id="meName"></b></p>
+<div class="row"><button class="alt" type="button" id="chg">Сменить</button><button class="alt" type="button" id="leave">Выйти из пары</button></div>
 </details>
 </div>
 </main>
@@ -79,6 +81,7 @@ summary{cursor:pointer;font-weight:600}
 (function(){
 var DB="https://shtrafy-pair-default-rtdb.firebaseio.com",KR="shtrafy-room-v1",KL="shtrafy-log-v1";
 var P=["Олежа","Настюша"],room="",log=[],timer=null;
+var KM="shtrafy-me-v1",me=-1,WK="https://zhepa-notify.nastya116rus8.workers.dev/";
 var add=["Принято. Отрабатывай, жепа!","Записано. Настюша не забывает.","Штрафы растут, а совесть где?","Ещё один. Серьёзно?","Это уже система."];
 var done=["Отработано! Мы гордимся.","Штраф закрыт. Можно выдохнуть.","Обнимашки засчитаны.","Долг уменьшился. Молодец.","Прощено. Но мы всё помним."];
 var RX=/^[a-z0-9]{10,24}$/;
@@ -90,6 +93,14 @@ function base(){return DB+"/rooms/"+room+"/log"}
 function stat(p){var a=0,d=0;log.forEach(function(x){if(x.p===p){if(x.k==="a")a++;else d++}});return{a:a,d:d,o:a-d}}
 function lsGet(k){try{return localStorage.getItem(k)||""}catch(e){return""}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function tgId(){try{var u=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initDataUnsafe&&window.Telegram.WebApp.initDataUnsafe.user;return u&&typeof u.id==="number"?u.id:null}catch(e){return null}}
+function showMe(){$("meName").textContent=(me===0||me===1)?P[me]:"не выбрано"}
+function register(){var id=tgId();if(id===null||(me!==0&&me!==1)||!room)return;
+ fetch(DB+"/rooms/"+room+"/users/"+me+".json",{method:"PUT",body:JSON.stringify(id)}).catch(function(){})}
+function setMe(v){me=v;lsSet(KM,String(v));$("who").hidden=true;showMe();register();
+ try{var t=window.Telegram&&window.Telegram.WebApp;if(t&&t.requestWriteAccess)t.requestWriteAccess(function(){})}catch(e){}}
+function notify(p,k){if(me!==0&&me!==1)return;
+ fetch(WK,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({room:room,me:me,p:p,kind:k})}).catch(function(){})}
 function parse(o){
  var r=[];if(!o)return r;
  Object.keys(o).forEach(function(id){var x=o[id];
@@ -109,7 +120,7 @@ function act(p,k){
  if(k==="d"&&stat(p).o<1)return;
  status("Отправляю…");
  send("POST",base()+".json",{p:p,k:k,ts:Date.now()}).then(function(){
-  var m=k==="a"?add:done;msg(m[Math.floor(Math.random()*m.length)]);return refresh();
+  notify(p,k);var m=k==="a"?add:done;msg(m[Math.floor(Math.random()*m.length)]);return refresh();
  }).catch(function(){status("Не получилось отправить. Проверь интернет.")});
 }
 function undo(){
@@ -139,6 +150,8 @@ function start(r){
  room=r;lsSet(KR,r);
  $("intro").hidden=true;$("app").hidden=false;
  $("code").textContent=r;
+ var sm=lsGet(KM);me=(sm==="0"||sm==="1")?+sm:-1;showMe();
+ if(me<0)$("who").hidden=false;else{$("who").hidden=true;register()}
  $("link").value="https://t.me/zhepa_shtrafy_bot/shtrafy?startapp="+r;
  $("link2").value=location.origin+location.pathname+"#"+r;
  status("Загружаю…");render();refresh();
@@ -166,6 +179,7 @@ $("join").onclick=function(){
  history.replaceState(null,"","#"+v);start(v);
 };
 $("undo").onclick=undo;
+$("w0").onclick=function(){setMe(0)};$("w1").onclick=function(){setMe(1)};$("chg").onclick=function(){$("who").hidden=false};
 $("copy").onclick=function(){
  var i=$("link");i.select();i.setSelectionRange(0,999);
  var ok=false;try{ok=document.execCommand("copy")}catch(e){}
