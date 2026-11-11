@@ -7,6 +7,7 @@
 <link rel="icon" href="icon.png">
 <meta name="apple-mobile-web-app-title" content="Штрафы">
 <title>Штрафы за «жепу»</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600&family=Pacifico&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#FFF0F3;--ink:#3B1630;--muted:#7A4A66;--rose:#D93A6E;--soft:#FFD9E2;--card:#FFFFFF;color-scheme:light;
@@ -64,10 +65,13 @@ summary{cursor:pointer;font-weight:600}
 <ol id="log"></ol>
 <details>
 <summary>Пара и приглашение</summary>
-<p>Отправь эту ссылку второму человеку. Если ссылка не открывается в ярлыке на экране, пусть введёт код вручную.</p>
-<input id="link" readonly aria-label="Ссылка-приглашение">
-<p>Код пары: <b id="code"></b></p>
-<div class="row"><button type="button" id="copy">Скопировать ссылку</button><button class="alt" type="button" id="leave">Выйти из пары</button></div>
+<p>Отправь эту ссылку второму человеку. Она откроет счётчик в Телеграме.</p>
+<input id="link" readonly aria-label="Ссылка для Телеграма">
+<div class="row"><button type="button" id="copy">Скопировать ссылку</button></div>
+<p>Ссылка для браузера:</p>
+<input id="link2" readonly aria-label="Ссылка для браузера">
+<p>Код пары (если ссылка не открылась): <b id="code"></b></p>
+<div class="row"><button class="alt" type="button" id="leave">Выйти из пары</button></div>
 </details>
 </div>
 </main>
@@ -135,7 +139,8 @@ function start(r){
  room=r;lsSet(KR,r);
  $("intro").hidden=true;$("app").hidden=false;
  $("code").textContent=r;
- $("link").value=location.origin+location.pathname+"#"+r;
+ $("link").value="https://t.me/zhepa_shtrafy_bot/shtrafy?startapp="+r;
+ $("link2").value=location.origin+location.pathname+"#"+r;
  status("Загружаю…");render();refresh();
  clearInterval(timer);
  timer=setInterval(function(){if(!document.hidden)refresh()},3000);
@@ -172,7 +177,9 @@ $("leave").onclick=function(){
  clearInterval(timer);lsSet(KR,"");room="";history.replaceState(null,"",location.pathname);
  $("app").hidden=true;$("intro").hidden=false;
 };
-var h=location.hash.replace(/^#/,"").toLowerCase(),saved=lsGet(KR);
+var tg=window.Telegram&&window.Telegram.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}}
+var sp="";try{sp=((tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||"").toLowerCase()}catch(e){}
+var h=location.hash.replace(/^#/,"").toLowerCase(),saved=lsGet(KR);if(RX.test(sp))h=sp;
 if(RX.test(h))start(h);else if(RX.test(saved))start(saved);else $("intro").hidden=false;
 document.addEventListener("visibilitychange",function(){if(!document.hidden)refresh()});
 })();
